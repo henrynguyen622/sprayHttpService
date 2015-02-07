@@ -23,6 +23,8 @@ class MyServiceActor extends Actor with MyService {
 // this trait defines our service behavior independently from the service actor
 trait MyService extends HttpService {
 
+  private val currentVersion = "v1.0"
+
   private val publicRoutes = path("") {
     get {
       respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
@@ -35,14 +37,23 @@ trait MyService extends HttpService {
         }
       }
     }
-  }
-
-  private val internalRoutes = path("health-check") {
+  } ~
+  path("health-check") {
     get {
-      ctx => ctx.complete("Green")
+      ctx => ctx.complete(s"Ok. Current Version: $currentVersion ")
     }
   }
 
-  val serviceRoute = publicRoutes ~ internalRoutes
+
+  private val apiRoutes = pathPrefix("api") {
+    headerValueByName("X-AppName-Api-Version") {
+      apiVersion =>
+        get {
+          ctx => ctx.complete(s"your request api=$apiVersion")
+        }
+    }
+  }
+
+  val serviceRoute = publicRoutes ~ apiRoutes
 
 }
